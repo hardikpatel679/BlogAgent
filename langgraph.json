@@ -1,0 +1,12 @@
+{
+     "_comment":"this json is use to deply graph on langchain studio helpful to debug the application",
+    "dependency":["."],
+    "graphs":{
+        "blog_generation_agent":"./src/graph/agent_graph.py:graph"
+    },
+    "env":"./.env",
+    "source": {
+    "kind": "uv",
+    "root": "."
+    }
+}

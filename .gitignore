@@ -1,3 +1,10 @@
 .env
 .venv/
-.env
+# Ignore all compiled Python files
+*.pyc
+
+# Ignore the entire cache directory
+__pycache__/
+
+*.pckl
+*.langgraph_api

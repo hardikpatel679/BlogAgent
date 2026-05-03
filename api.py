@@ -1,4 +1,5 @@
 import uvicorn
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI,Request
 from src.llm.groqllm import Groq_LLM
 from src.graph.agent_graph import Agent_Graph
@@ -8,6 +9,13 @@ load_dotenv()
 
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://smith.langchain.com"], # Allow LangSmith
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 os.environ["LANGSMITH_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
 
