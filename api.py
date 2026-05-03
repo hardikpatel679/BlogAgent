@@ -1,4 +1,5 @@
 import uvicorn
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI,Request
 from src.llm.groqllm import Groq_LLM
 from src.graph.agent_graph import Agent_Graph

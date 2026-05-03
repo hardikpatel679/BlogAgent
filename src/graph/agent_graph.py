@@ -27,3 +27,10 @@ class Agent_Graph:
         self.graph.add_edge("blog_content_creation",END)
 
         return self.graph
+    
+# below code for langsmith langgraph studio
+llm = Groq_LLM().get_llm()
+
+# get graph
+graph_builder = Agent_Graph(llm)
+graph = graph_builder.build_blog_graph().compile()
