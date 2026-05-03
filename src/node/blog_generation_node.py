@@ -12,7 +12,7 @@ class BlogNodes:
         """
         crate title generate for the blog
         """
-        if state.get('topic'):
+        if state.get('topic') and state.get('language'):
             prompt = """
             You are a Senior SEO Content Strategist. Your goal is to generate a high-ranking, SEO-optimized blog title for the topic: {topic}.
 
@@ -22,10 +22,12 @@ class BlogNodes:
             3. Structure: Use a proven SEO formula (e.g., "How to...", "X Best...", "The Ultimate Guide to...").
             4. Power Words: Include one high-impact word (e.g., "Proven", "Essential", "Powerful", "Simplified").
             5. Formatting: Return ONLY the plain text of the title. No quotes, no "Title:", and no Markdown bolding.
+            6. title must be in {language}
+            7. its must 1 liner
 
             Generate the best SEO title now:
             """
-            system_prompt = prompt.format(topic = state['topic'])
+            system_prompt = prompt.format(topic = state['topic'], language = state['language'])
             response = self.llm.invoke(system_prompt)
             
             return {"blog":{"title":response.content.strip()}}
@@ -57,13 +59,15 @@ class BlogNodes:
                 3. Use standard Markdown for bolding (**text**) and bullet points (* item).
                 4. Do NOT include literal backslashes like '\\n'. Use actual newlines.
                 5. Start directly with the content. Do not say "Here is your blog".
+                6. Blog must be in {language} language
 
                 Write the blog in clean Markdown format:
                 """
             
             system_prompt = prompt.format(
                 topic=state['topic'],
-                title = state['blog']['title']
+                title = state['blog']['title'],
+                language = state['language']
                 )
             
             response = self.llm.invoke(system_prompt)
