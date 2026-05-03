@@ -15,6 +15,7 @@ This project demonstrates practical experience with:
 - **Production API design** with FastAPI and async request handling
 - **Clean modular architecture** separating LLM config, graph logic, and API concerns
 - **Observability** via LangSmith tracing
+- **LangGraph Studio integration** for visual graph debugging and deployment
 
 ---
 
@@ -24,11 +25,16 @@ This project demonstrates practical experience with:
 BlogAgent/
 ├── api.py                  # FastAPI app — REST endpoint & orchestration entry point
 ├── main.py                 # CLI entry point
+├── langgraph.json          # LangGraph Studio deployment configuration
 ├── src/
 │   ├── llm/
 │   │   └── groqllm.py      # Groq LLM factory — wraps langchain-groq initialization
-│   └── graph/
-│       └── agent_graph.py  # LangGraph agent graph — defines nodes, edges, and state
+│   ├── graph/
+│   │   └── agent_graph.py  # LangGraph agent graph — defines nodes, edges, and state
+│   ├── node/
+│   │   └── blog_generation_node.py  # Blog generation node logic
+│   └── state/
+│       └── blockstate.py   # Shared graph state definition
 ├── pyproject.toml          # Project metadata & pinned dependencies (uv)
 ├── requirement.txt         # pip-compatible dependency list
 └── request.json            # Sample API request payload
@@ -56,6 +62,7 @@ POST /blogs  →  FastAPI  →  Groq_LLM.get_llm()  →  Agent_Graph.build_blog_
 | LLM Orchestration | LangChain, LangChain-Core, LangChain-Community |
 | Agent Framework | LangGraph (stateful graph execution) |
 | Observability | LangSmith |
+| Graph Debugging | LangGraph Studio |
 | Package Manager | `uv` (with `pyproject.toml`) |
 | Python Version | 3.14+ |
 
@@ -101,6 +108,76 @@ python api.py
 ```
 
 The server will start at `http://0.0.0.0:8000` with hot-reload enabled.
+
+---
+
+## 🧪 LangGraph Studio (Local Debugging)
+
+This project now ships with a `langgraph.json` configuration that allows you to load and **visually debug the agent graph** inside [LangGraph Studio](https://smith.langchain.com/studio).
+
+### `langgraph.json`
+
+```json
+{
+  "dependency": ["."],
+  "graphs": {
+    "blog_generation_agent": "./src/graph/agent_graph.py:graph"
+  },
+  "env": "./.env",
+  "source": {
+    "kind": "uv",
+    "root": "."
+  }
+}
+```
+
+### How to Launch
+
+```bash
+# Install the LangGraph CLI if not already installed
+pip install langgraph-cli
+
+# Start the Studio server (serves the graph UI locally)
+langgraph dev
+```
+
+Then open LangGraph Studio in your browser and load this project. You will see the full agent graph rendered visually — nodes, edges, and state transitions — and can step through executions, inspect intermediate state, and replay runs for debugging.
+
+> **Why this matters:** LangGraph Studio makes it trivial to introspect multi-step agentic flows. Rather than reading log output, you can visually trace exactly which node fired, what state it received, and what it emitted — dramatically reducing debugging time during development.
+
+### Studio-Compatible Graph Export
+
+The `agent_graph.py` module now exposes a top-level compiled `graph` object at module scope so LangGraph Studio can import it directly without running the full API server:
+
+```python
+# src/graph/agent_graph.py  (bottom of file — added in this branch)
+llm = Groq_LLM().get_llm()
+graph_builder = Agent_Graph(llm)
+graph = graph_builder.build_blog_graph().compile()
+```
+
+This pattern is the standard LangGraph Studio convention: the `langgraph.json` `graphs` entry points to `agent_graph.py:graph`, which resolves to this compiled graph instance.
+
+---
+
+## 🌐 CORS — LangSmith Integration
+
+The FastAPI app now includes CORS middleware configured to allow requests from `https://smith.langchain.com`. This is required for LangGraph Studio's remote invocation and LangSmith's trace replay features to communicate with a locally running server.
+
+```python
+# api.py
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://smith.langchain.com"],  # Allow LangSmith / LangGraph Studio
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+```
+
+> Without this, browser-based tools like LangGraph Studio will be blocked by the browser's CORS policy when trying to invoke your local API endpoint during debugging sessions.
 
 ---
 
@@ -153,6 +230,8 @@ Generate a complete blog post on the given topic.
 
 **LangSmith tracing** — The `LANGSMITH_API_KEY` environment variable is wired up at startup, enabling full trace visibility into each graph execution for debugging and evaluation.
 
+**LangGraph Studio deployment** — The `langgraph.json` manifest and top-level `graph` export in `agent_graph.py` follow the Studio convention, meaning the graph can be loaded, visualized, and interactively invoked from LangGraph Studio without any extra glue code.
+
 ---
 
 ## 📦 Dependencies
@@ -173,12 +252,26 @@ watchdog>=6.0.0
 
 ## 🗺️ Roadmap
 
+- [x] LangGraph Studio local deployment support (`langgraph.json`)
+- [x] CORS middleware for LangSmith / Studio integration
 - [ ] Add streaming response support (`StreamingResponse`)
 - [ ] Expose graph visualization endpoint using LangGraph's built-in tooling
 - [ ] Add tone/length/audience parameters to the blog request
 - [ ] Integrate web search tool node for grounded, fact-checked content
 - [ ] Dockerize for one-command deployment
 - [ ] Add LangSmith evaluation dataset for output quality benchmarking
+
+---
+
+## 📋 Changelog
+
+### `langgraph_studio_deployment_configuration` branch
+
+| Change | File | Description |
+|---|---|---|
+| ✨ New file | `langgraph.json` | LangGraph Studio deployment manifest — maps `blog_generation_agent` graph to the compiled export in `agent_graph.py` |
+| ✨ New code | `src/graph/agent_graph.py` | Added module-level compiled `graph` object (`llm → Agent_Graph → build_blog_graph().compile()`) for Studio import compatibility |
+| ✨ New code | `api.py` | Added `CORSMiddleware` allowing `https://smith.langchain.com` — required for Studio ↔ local API communication |
 
 ---
 

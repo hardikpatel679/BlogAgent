@@ -9,13 +9,6 @@ load_dotenv()
 
 
 app = FastAPI()
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["https://smith.langchain.com"], # Allow LangSmith
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 os.environ["LANGSMITH_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
 
