@@ -20,7 +20,7 @@ async def create_blog(request:Request):
     try:
         data = await request.json()
         topic = data.get("topic","")
-        language = data.get("language","")
+        language = data.get("language","English")
     except Exception:
         return {"status": "error", "message": "Missing or invalid JSON body"}
 
